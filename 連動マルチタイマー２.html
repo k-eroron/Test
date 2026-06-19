@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>れんどうタイマー</title>
+    <style>
+        :root {
+            --bg-color: #f0fdf4;
+            --main-color: #4ade80;
+            --main-hover: #22c55e;
+            --accent-color: #facc15;
+            --accent-hover: #eab308;
+            --danger-color: #f87171;
+            --danger-hover: #ef4444;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #16a34a;
+            text-shadow: 2px 2px 0px #bbf7d0;
+            margin-bottom: 5px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            padding: 25px;
+            border: 4px solid #bbf7d0;
+        }
+
+        /* 設定画面 */
+        .setup-screen {
+            display: block;
+        }
+
+        .instruction {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 15px;
+            color: #2e7d32;
+        }
+
+        .timer-input-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .timer-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 15px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .timer-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: #e2e8f0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #64748b;
+        }
+
+        .timer-name-input {
+            flex: 1;
+            font-size: 1.1rem;
+            padding: 8px 12px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            outline: none;
+            background: white;
+            color: var(--text-color);
+        }
+
+        .timer-name-input:focus {
+            border-color: var(--main-color);
+            background: #f0fdf4;
+        }
+
+        .timer-minute-input {
+            width: 75px;
+            font-size: 1.1rem;
+            padding: 8px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            text-align: center;
+            outline: none;
+        }
+
+        .timer-minute-input:focus {
+            border-color: var(--main-color);
+        }
+
+        .unit-label {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .start-btn {
+            display: block;
+            width: 100%;
+            background: var(--main-color);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.6rem;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 var(--main-hover);
+            transition: all 0.1s ease;
+        }
+
+        .start-btn:active {
+            transform: translateY(6px);
+            box-shadow: none;
+        }
+
+        /* タイマー画面 */
+        .timer-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .current-timer-info {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1e293b;
+            min-height: 40px;
+            word-break: break-all;
+        }
+
+        /* 円形インジケーター */
+        .visual-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 25px;
+        }
+
+        .progress-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .progress-bg {
+            fill: none;
+            stroke: #f1f5f9;
+            stroke-width: 20;
+        }
+
+        .progress-bar {
+            fill: none;
+            stroke: var(--main-color);
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear, stroke 0.3s;
+        }
+
+        .digital-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3.5rem;
+            font-weight: bold;
+            font-family: monospace;
+            color: #0f172a;
+        }
+
+        /* コントロールボタン */
+        .control-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .big-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .stop-btn {
+            background: var(--danger-color);
+            color: white;
+            box-shadow: 0 8px 0 var(--danger-hover);
+        }
+
+        .stop-btn:active {
+            transform: translateY(8px);
+            box-shadow: none;
+        }
+
+        .next-btn {
+            background: var(--accent-color);
+            color: #713f12;
+            box-shadow: 0 8px 0 var(--accent-hover);
+            animation: pulse 1s infinite alternate;
+        }
+
+        .next-btn:active {
+            transform: translateY(8px);
+            box-shadow: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.03); }
+        }
+
+        .reset-btn {
+            background: #94a3b8;
+            color: white;
+            font-size: 1.2rem;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 4px 0 #64748b;
+        }
+
+        .reset-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* 次の予定リスト */
+        .upcoming-list {
+            margin-top: 25px;
+            text-align: left;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .upcoming-title {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .upcoming-item {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .upcoming-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .upcoming-time {
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><ruby>連動<rt>れんどう</rt></ruby>マルチタイマー</h1>
+    </header>
+
+    <div class="container">
+        <div id="setupScreen" class="setup-screen">
+            <div class="instruction">
+                文字を書きかえて、じぶんの予定をつくろう！
+            </div>
+            <div class="timer-input-list">
+                <div class="timer-input-row">
+                    <span class="timer-number">1</span>
+                    <input type="text" class="timer-name-input" value="📝 しゅくだい" placeholder="やることを入力してね">
+                    <input type="number" class="timer-minute-input" value="25" min="1" max="99">
+                    <span class="unit-label"><ruby>分<rt>ふん</rt></ruby></span>
+                </div>
+
+                <div class="timer-input-row">
+                    <span class="timer-number">2</span>
+                    <input type="text" class="timer-name-input" value="🍵 きゅうけい" placeholder="やることを入力してね">
+                    <input type="number" class="timer-minute-input" value="5" min="1" max="99">
+                    <span class="unit-label"><ruby>分<rt>ふん</rt></ruby></span>
+                </div>
+
+                <div class="timer-input-row">
+                    <span class="timer-number">3</span>
+                    <input type="text" class="timer-name-input" value="🎮 ゲーム" placeholder="（つかわないときは空っぽに）">
+                    <input type="number" class="timer-minute-input" value="25" min="1" max="99">
+                    <span class="unit-label"><ruby>分<rt>ふん</rt></ruby></span>
+                </div>
+
+                <div class="timer-input-row">
+                    <span class="timer-number">4</span>
+                    <input type="text" class="timer-name-input" value="" placeholder="（つかわないときは空っぽに）">
+                    <input type="number" class="timer-minute-input" value="5" min="1" max="99">
+                    <span class="unit-label"><ruby>分<rt>ふん</rt></ruby></span>
+                </div>
+
+                <div class="timer-input-row">
+                    <span class="timer-number">5</span>
+                    <input type="text" class="timer-name-input" value="" placeholder="（つかわないときは空っぽに）">
+                    <input type="number" class="timer-minute-input" value="10" min="1" max="99">
+                    <span class="unit-label"><ruby>分<rt>ふん</rt></ruby></span>
+                </div>
+            </div>
+            <button id="startAppBtn" class="start-btn">スタート！</button>
+        </div>
+
+        <div id="timerScreen" class="timer-screen">
+            <div id="currentTimerName" class="current-timer-info">---</div>
+            
+            <div class="visual-container">
+                <svg class="progress-svg" viewBox="0 0 200 200">
+                    <circle class="progress-bg" cx="100" cy="100" r="85"></circle>
+                    <circle id="progressBar" class="progress-bar" cx="100" cy="100" r="85"></circle>
+                </svg>
+                <div id="digitalDisplay" class="digital-display">00:00</div>
+            </div>
+
+            <div class="control-btns">
+                <button id="stopAlarmBtn" class="big-btn next-btn" style="display: none;">つぎへ すすむ！</button>
+                <button id="pausePlayBtn" class="big-btn stop-btn">ストップ</button>
+                <button id="resetAppBtn" class="big-btn reset-btn">はじめから やりなおす</button>
+            </div>
+
+            <div class="upcoming-list">
+                <div class="upcoming-title">✨ つぎのよてい</div>
+                <div id="upcomingItems"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 状態管理 (State) ---
+        let timers = [];
+        let currentTimerIndex = 0;
+        let countdownInterval = null;
+        let isPaused = false;
+        let audioContext = null;
+        let alarmInterval = null;
+
+        // SVG円周の計算
+        const radius = 85;
+        const circumference = 2 * Math.PI * radius;
+        const progressBar = document.getElementById('progressBar');
+        progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressBar.style.strokeDashoffset = 0;
+
+        // --- Web Audio API によるアラーム音生成 ---
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep() {
+            if (!audioContext) return;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioContext.currentTime);
+            gain.gain.setValueAtTime(0.5, audioContext.currentTime);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.15);
+        }
+
+        function startAlarmLoop() {
+            playBeep();
+            alarmInterval = setInterval(playBeep, 500);
+        }
+
+        function stopAlarmLoop() {
+            if (alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+        }
+
+        // --- 画面切り替え ---
+        function showScreen(screenId) {
+            document.getElementById('setupScreen').style.display = screenId === 'setup' ? 'block' : 'none';
+            document.getElementById('timerScreen').style.display = screenId === 'timer' ? 'block' : 'none';
+        }
+
+        // --- タイマー処理ロジック ---
+        document.getElementById('startAppBtn').addEventListener('click', () => {
+            initAudio();
+            timers = [];
+            
+            const rows = document.querySelectorAll('.timer-input-row');
+            let filledCount = 0;
+
+            rows.forEach((row, index) => {
+                // 前後の余分なスペースを消して文字を取得
+                let name = row.querySelector('.timer-name-input').value.trim();
+                const minutes = parseInt(row.querySelector('.timer-minute-input').value, 10);
+                
+                // 分数が正しく入力されている場合のみ対象にする
+                if (!isNaN(minutes) && minutes > 0) {
+                    // もし名前が空っぽだったら「タイマー 1」のように自動で名前をつける
+                    if (name === "") {
+                        // ただし、1つ目と2つ目の初期状態のように、ユーザーが意図して空にした場合はスキップできるよう
+                        // 3つ目以降で一度も文字が入っていない行はスキップするための判定
+                        if (index >= 2 && row.querySelector('.timer-name-input').value === "") {
+                            return; 
+                        }
+                        name = `⏳ タイマー ${index + 1}`;
+                    }
+                    
+                    timers.push({
+                        name: name,
+                        duration: minutes * 60,
+                        remaining: minutes * 60
+                    });
+                    filledCount++;
+                }
+            });
+
+            if (timers.length === 0) {
+                alert('もくひょうの時間を 1つ いじょう入力してね！');
+                return;
+            }
+
+            currentTimerIndex = 0;
+            isPaused = false;
+            showScreen('timer');
+            renderUpcomingList();
+            startTimer(currentTimerIndex);
+        });
+
+        function startTimer(index) {
+            if (index >= timers.length) {
+                endAllTimers();
+                return;
+            }
+
+            currentTimerIndex = index;
+            document.getElementById('stopAlarmBtn').style.display = 'none';
+            document.getElementById('pausePlayBtn').style.display = 'block';
+            document.getElementById('pausePlayBtn').textContent = 'ストップ';
+            document.getElementById('pausePlayBtn').className = 'big-btn stop-btn';
+            progressBar.style.stroke = 'var(--main-color)';
+
+            updateDisplay();
+            renderUpcomingList();
+
+            countdownInterval = setInterval(() => {
+                if (!isPaused) {
+                    timers[currentTimerIndex].remaining--;
+                    updateDisplay();
+
+                    if (timers[currentTimerIndex].remaining <= 0) {
+                        clearInterval(countdownInterval);
+                        triggerAlarm();
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
+            const current = timers[currentTimerIndex];
+            if (!current) return;
+
+            // 文字列更新
+            document.getElementById('currentTimerName').textContent = current.name;
+            
+            // デジタル表示
+            const mins = Math.floor(current.remaining / 60).toString().padStart(2, '0');
+            const secs = (current.remaining % 60).toString().padStart(2, '0');
+            document.getElementById('digitalDisplay').textContent = `${mins}:${secs}`;
+
+            // 円形インジケーター更新
+            const progress = current.remaining / current.duration;
+            const offset = circumference * (1 - progress);
+            progressBar.style.strokeDashoffset = offset;
+
+            // 残り10秒以下でゲージを赤くする
+            if (current.remaining <= 10) {
+                progressBar.style.stroke = 'var(--danger-color)';
+            }
+        }
+
+        function triggerAlarm() {
+            startAlarmLoop();
+            
+            // UIをアラーム終了時モードに変更
+            document.getElementById('pausePlayBtn').style.display = 'none';
+            document.getElementById('stopAlarmBtn').style.display = 'block';
+            document.getElementById('digitalDisplay').textContent = "00:00";
+            progressBar.style.strokeDashoffset = circumference;
+        }
+
+        // 「つぎへすすむ！」またはアラーム停止
+        document.getElementById('stopAlarmBtn').addEventListener('click', () => {
+            stopAlarmLoop();
+            currentTimerIndex++;
+            if (currentTimerIndex < timers.length) {
+                startTimer(currentTimerIndex);
+            } else {
+                endAllTimers();
+            }
+        });
+
+        // 一時停止・再開
+        document.getElementById('pausePlayBtn').addEventListener('click', () => {
+            if (isPaused) {
+                isPaused = false;
+                document.getElementById('pausePlayBtn').textContent = 'ストップ';
+                document.getElementById('pausePlayBtn').className = 'big-btn stop-btn';
+            } else {
+                isPaused = true;
+                document.getElementById('pausePlayBtn').textContent = 'さいかい（スタート）';
+                document.getElementById('pausePlayBtn').className = 'big-btn next-btn';
+            }
+        });
+
+        // やりなおすボタン
+        function resetApp() {
+            clearInterval(countdownInterval);
+            stopAlarmLoop();
+            showScreen('setup');
+        }
+        document.getElementById('resetAppBtn').addEventListener('click', resetApp);
+
+        // すべて終了したとき
+        function endAllTimers() {
+            clearInterval(countdownInterval);
+            stopAlarmLoop();
+            alert('🎉 ぜんぶクリア！よくがんばったね！');
+            showScreen('setup');
+        }
+
+        // 次の予定リストの描画
+        function renderUpcomingList() {
+            const listContainer = document.getElementById('upcomingItems');
+            listContainer.innerHTML = '';
+
+            timers.forEach((timer, idx) => {
+                if (idx > currentTimerIndex) {
+                    const item = document.createElement('div');
+                    item.className = 'upcoming-item';
+                    const displayMins = Math.floor(timer.duration / 60);
+                    item.innerHTML = `<span class="upcoming-name">${idx + 1}. ${timer.name}</span> <span class="upcoming-time">${displayMins}分</span>`;
+                    listContainer.appendChild(item);
+                }
+            });
+
+            if (listContainer.innerHTML === '') {
+                listContainer.innerHTML = '<div class="upcoming-item" style="color:#64748b;">つぎのよていは ありません！</div>';
+            }
+        }
+    </script>
+</body>
+</html>
